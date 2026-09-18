@@ -1,27 +1,27 @@
 .PHONY: up down migrate dev worker digest-sweep test test-integration lint
 
 up:
-	docker compose up -d
-	@until docker compose exec -T postgres pg_isready -U notifyhub >/dev/null 2>&1; do sleep 1; done
-	@until docker compose exec -T redis redis-cli ping >/dev/null 2>&1; do sleep 1; done
+	docker-compose up -d --build
+	@until docker-compose exec -T postgres pg_isready -U notifyhub >/dev/null 2>&1; do sleep 1; done
+	@# Redis may already be running on the host (:6379); Compose redis is optional.
 	@$(MAKE) migrate
 
 migrate:
-	PGPASSWORD=notifyhub psql -h localhost -U notifyhub -d notifyhub -f migrations/0001_init.sql
+	docker-compose exec -T postgres psql -U notifyhub -d notifyhub -f - < migrations/0001_init.sql
+	docker-compose exec -T postgres psql -U notifyhub -d notifyhub -f - < migrations/0002_seed.sql
 
 down:
-	docker compose down
+	docker-compose down
 
-# Runs app/main.py — does not exist yet, see docs/CURSOR_CONTEXT.md.
+# Runs app/main.py
 dev:
 	uvicorn app.main:app --reload --port 8000
 
-# Runs app/worker.py (the QueueLine-consuming dispatch worker) — does
-# not exist yet.
+# Runs app/worker.py (the QueueLine-consuming dispatch worker)
 worker:
 	python -m app.worker
 
-# Runs the digest flush sweep as its own process — does not exist yet.
+# Runs the digest flush sweep as its own process
 digest-sweep:
 	python -m app.digest_sweep
 

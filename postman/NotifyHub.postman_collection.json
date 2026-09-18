@@ -1,0 +1,320 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "NotifyHub",
+    "description": "Manual smoke tests for NotifyHub MVP HTTP API and mock providers.\n\nSeed user id: 11111111-1111-1111-1111-111111111111 (from migrations/0002_seed.sql).\n\nFull ambiguous-timeout / failover proofs belong in automated tests (docs/TESTING.md \u00a71), not Postman alone.\n\nPrerequisites: QueueLine on :8080, `make up`, `make dev`, optionally `make worker` and `make digest-sweep`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "userId",
+      "value": "11111111-1111-1111-1111-111111111111"
+    },
+    {
+      "key": "unsubscribeToken",
+      "value": "eyJ1c2VySWQiOiIxMTExMTExMS0xMTExLTExMTEtMTExMS0xMTExMTExMTExMTEiLCJjYXRlZ29yeSI6ImNvbW1lbnRzIiwiY2hhbm5lbCI6IkVNQUlMIn0.m2upecVIvbNzbcgBSYdZzrBODC0Hw7fLLjCE2mWNxCQ"
+    },
+    {
+      "key": "mockEmailPrimary",
+      "value": "http://localhost:9101"
+    },
+    {
+      "key": "mockEmailFallback",
+      "value": "http://localhost:9102"
+    },
+    {
+      "key": "idempotencyKey",
+      "value": "postman-test-key-1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Live",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health/live"
+          }
+        },
+        {
+          "name": "Ready",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health/ready"
+          }
+        },
+        {
+          "name": "Metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/metrics"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Preferences",
+      "item": [
+        {
+          "name": "Set IMMEDIATE preference",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"comments\",\n  \"channel\": \"EMAIL\",\n  \"enabled\": true,\n  \"batchingMode\": \"IMMEDIATE\"\n}"
+            },
+            "url": "{{baseUrl}}/v1/users/{{userId}}/preferences"
+          }
+        },
+        {
+          "name": "Set DIGEST_HOURLY preference",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"comments\",\n  \"channel\": \"EMAIL\",\n  \"enabled\": true,\n  \"batchingMode\": \"DIGEST_HOURLY\"\n}"
+            },
+            "url": "{{baseUrl}}/v1/users/{{userId}}/preferences"
+          }
+        },
+        {
+          "name": "Get preferences",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/users/{{userId}}/preferences"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Events",
+      "item": [
+        {
+          "name": "Post immediate event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"category\": \"comments\",\n  \"channel\": \"EMAIL\",\n  \"templateData\": {\n    \"commenter\": \"Alex\",\n    \"body\": \"Hello from Postman\"\n  }\n}"
+            },
+            "url": "{{baseUrl}}/v1/events"
+          }
+        },
+        {
+          "name": "Post digest event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"category\": \"comments\",\n  \"channel\": \"EMAIL\",\n  \"templateData\": {\n    \"commenter\": \"Sam\",\n    \"body\": \"Batched comment\"\n  }\n}"
+            },
+            "url": "{{baseUrl}}/v1/events"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "List notification history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/{{userId}}/notifications?limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "{{userId}}",
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Unsubscribe",
+      "item": [
+        {
+          "name": "Unsubscribe with token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/users/{{userId}}/unsubscribe?token={{unsubscribeToken}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "users",
+                "{{userId}}",
+                "unsubscribe"
+              ],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "{{unsubscribeToken}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "item": [
+        {
+          "name": "Bounce (first)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"sg-event-001\",\n  \"userId\": \"{{userId}}\",\n  \"channel\": \"EMAIL\",\n  \"reason\": \"HARD_BOUNCE\"\n}"
+            },
+            "url": "{{baseUrl}}/v1/webhooks/mock-email-primary/bounce"
+          }
+        },
+        {
+          "name": "Bounce (duplicate eventId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"sg-event-001\",\n  \"userId\": \"{{userId}}\",\n  \"channel\": \"EMAIL\",\n  \"reason\": \"HARD_BOUNCE\"\n}"
+            },
+            "url": "{{baseUrl}}/v1/webhooks/mock-email-primary/bounce"
+          }
+        },
+        {
+          "name": "Bounce (distinct eventId)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventId\": \"sg-event-002\",\n  \"userId\": \"{{userId}}\",\n  \"channel\": \"EMAIL\",\n  \"reason\": \"COMPLAINT\"\n}"
+            },
+            "url": "{{baseUrl}}/v1/webhooks/mock-email-primary/bounce"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mock providers",
+      "item": [
+        {
+          "name": "Send NORMAL smoke",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipient\": \"alex@example.com\",\n  \"subject\": \"Test\",\n  \"body\": \"Hello\",\n  \"idempotencyKey\": \"{{idempotencyKey}}\"\n}"
+            },
+            "url": "{{mockEmailPrimary}}/send"
+          }
+        },
+        {
+          "name": "Debug send-count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mockEmailPrimary}}/debug/send-count?idempotencyKey={{idempotencyKey}}",
+              "host": [
+                "{{mockEmailPrimary}}"
+              ],
+              "path": [
+                "debug",
+                "send-count"
+              ],
+              "query": [
+                {
+                  "key": "idempotencyKey",
+                  "value": "{{idempotencyKey}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Debug reset",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{mockEmailPrimary}}/debug/reset"
+          }
+        }
+      ]
+    }
+  ]
+}

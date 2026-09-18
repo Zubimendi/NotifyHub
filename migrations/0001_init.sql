@@ -83,7 +83,10 @@ CREATE TABLE digest_windows (
     flush_at        TIMESTAMPTZ NOT NULL,
     status          TEXT NOT NULL DEFAULT 'OPEN',  -- OPEN | FLUSHING | FLUSHED
     notification_id UUID,   -- set once flushed, points at the resulting notifications row
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    -- Touched on every status transition; used by the stuck-FLUSHING
+    -- crash-recovery pass (docs/CURSOR_CONTEXT.md §4).
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE UNIQUE INDEX idx_digest_windows_open ON digest_windows (user_id, category, channel) WHERE status = 'OPEN';
