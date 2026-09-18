@@ -1,0 +1,69 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: notifyhub
+      POSTGRES_PASSWORD: notifyhub
+      POSTGRES_DB: notifyhub
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notifyhub"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Four mock provider services, all built from the same not-yet-written
+  # mock_provider/app.py (see docs/CURSOR_CONTEXT.md §10), each given a
+  # different simulated behavior via SIMULATE_MODE — two for email
+  # specifically, so the failover chain has something real to fail over
+  # to (docs/PRD.md success criterion #2 needs a genuine second provider
+  # to prove failover against).
+  mock-email-primary:
+    build: ./mock_provider
+    environment:
+      PROVIDER_NAME: mock-email-primary
+      SIMULATE_MODE: NORMAL
+    ports:
+      - "9101:8080"
+
+  mock-email-fallback:
+    build: ./mock_provider
+    environment:
+      PROVIDER_NAME: mock-email-fallback
+      SIMULATE_MODE: NORMAL
+    ports:
+      - "9102:8080"
+
+  mock-sms-primary:
+    build: ./mock_provider
+    environment:
+      PROVIDER_NAME: mock-sms-primary
+      SIMULATE_MODE: NORMAL
+    ports:
+      - "9103:8080"
+
+  mock-push-primary:
+    build: ./mock_provider
+    environment:
+      PROVIDER_NAME: mock-push-primary
+      SIMULATE_MODE: NORMAL
+    ports:
+      - "9104:8080"
+
+volumes:
+  pgdata:
