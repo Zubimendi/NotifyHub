@@ -77,7 +77,7 @@ curl localhost:8000/v1/users/<id>/notifications   # history
 ## Documentation
 
 `docs/PRD.md`, `docs/ARCHITECTURE.md`, `docs/TESTING.md`,
-`docs/STORY.md`, `docs/CURSOR_CONTEXT.md`.
+`docs/STORY.md`.
 
 ## License
 
